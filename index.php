@@ -34,6 +34,10 @@ switch ($uc) {
             include("controleurs/c_listeVisiteur.php");
             break;
         }
+    case 'statsTotal' : {
+            include("controleurs/c_statsTotal.php");
+            break;
+        }   
     case 'deconnexion' : {
             include("controleurs/c_deconnexion.php");
             break;
