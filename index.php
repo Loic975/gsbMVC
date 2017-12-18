@@ -1,5 +1,5 @@
 <?php
-
+require_once("include/config.inc.php");
 require_once("include/fct.inc.php");
 require_once ("include/class.pdogsb.inc.php");
 session_start();
@@ -28,6 +28,10 @@ switch ($uc) {
         }
     case 'etatFrais' : {
             include("controleurs/c_etatFrais.php");
+            break;
+        }
+    case 'statVisiteur' : {
+            include("controleurs/c_listeVisiteur.php");
             break;
         }
     case 'deconnexion' : {

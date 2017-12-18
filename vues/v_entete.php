@@ -23,6 +23,7 @@
                             <li <?php if (!isset($_REQUEST['uc']) || $_REQUEST['uc'] == 'accueil') { ?> class="active"<?php } ?>><a href="index.php">Accueil</a></li>
                             <li <?php if (isset($_REQUEST['uc']) && $_REQUEST['uc'] == 'gererFrais') { ?> class="active"<?php } ?>><a href="index.php?uc=gererFrais&action=saisirFrais">Saisie fiche de frais</a></li>
                             <li <?php if (isset($_REQUEST['uc']) && $_REQUEST['uc'] == 'etatFrais') { ?> class="active"<?php } ?>><a href="index.php?uc=etatFrais&action=selectionnerMois">Mes fiches de frais</a></li>
+                            <li <?php if (isset($_REQUEST['uc']) && $_REQUEST['uc'] == 'statVisiteur') { ?> class="active"<?php } ?>><a href="index.php?uc=statVisiteur&action=selectionnerVisiteur">Statistiques par visiteur</a></li>
                             <li <?php if (isset($_REQUEST['uc']) && $_REQUEST['uc'] == 'deconnexion') { ?> class="active"<?php } ?>><a href="index.php?uc=deconnexion&action=demandeDeconnexion">Déconnexion</a></li>
                         </ul>
                     </div>

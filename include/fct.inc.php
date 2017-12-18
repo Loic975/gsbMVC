@@ -188,4 +188,34 @@ function nbErreurs() {
         return count($_REQUEST['erreurs']);
     }
 }
+
+/**
+* Retourne les années associé au mois des fiche de frais
+* 
+* @param $lesDatesFrais 
+*/
+function getAnneeFicheFrais($lesDatesFrais) {
+    $lesAnnees = array();
+    array_push($lesAnnees, substr($lesDatesFrais[0], 0, 4));
+    $trouve = false;
+    foreach($lesDatesFrais as $dateFrais)
+    {
+        foreach ($lesAnnees as $annee)
+        {
+            if(substr($dateFrais, 0, 4) == $annee)
+            {
+                $trouve = true;
+            }
+        }
+        if(!$trouve)
+        {
+            array_push($lesAnnees, substr($dateFrais, 0, 4));
+        }
+        else
+        {
+            $trouve = false;
+        }
+    }
+    return $lesAnnees;
+}
 ?>

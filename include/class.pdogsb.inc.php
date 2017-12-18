@@ -93,6 +93,59 @@ class PdoGsb {
         }
         return $lesLignes;
     }
+    
+    /**
+     * Retourne sous forme d'un tableau associatif toutes les lignes de frais hors forfait
+     * concernées par le visiteur par année
+     * La boucle foreach ne peut être utilisée ici car on procède
+     * à une modification de la structure itérée - transformation du champ date-
+     * 
+     * @param $idVisiteur l'id du visiteur concerné
+     * @param $annee tableau contenant les années de frais
+     * @return retourne l'annee associé au montant hors forfait des lignes de frais sous la forme d'un tableau associatif 
+     */
+    public function getLesFraisHorsForfaitAnnee($idVisiteur, $annee) {
+        $requete_prepare = PdoGsb::$monPdo->prepare("SELECT substring(mois, 1, 4) AS annee, SUM(montant) AS montant "
+                . "FROM lignefraishorsforfait "
+                . "WHERE lignefraishorsforfait.idVisiteur = :unIdVisiteur "
+                . "GROUP BY substring(mois, 1, 4)");
+        $requete_prepare->bindParam(':unIdVisiteur', $idVisiteur, PDO::PARAM_STR);
+        $requete_prepare->execute();
+        $lesFraisHorsForfaits = array();
+        while ($res = $requete_prepare->fetch()) {
+            $unFrais = array($res["annee"], intval($res["montant"]));
+            array_push($lesFraisHorsForfaits, $unFrais);
+        }
+        
+        return $lesFraisHorsForfaits;
+    }
+    
+    /**
+     * Retourne sous forme d'un tableau associatif toutes les lignes de frais hors forfait
+     * concernées par le visiteur par année
+     * La boucle foreach ne peut être utilisée ici car on procède
+     * à une modification de la structure itérée - transformation du champ date-
+     * 
+     * @param $idVisiteur l'id du visiteur concerné
+     * @param $annee tableau contenant les années de frais
+     * @return retourne l'annee associé au montant hors forfait des lignes de frais sous la forme d'un tableau associatif 
+     */
+    public function getLesFraisForfaitAnnee($idVisiteur, $annee) {
+        $requete_prepare = PdoGsb::$monPdo->prepare("SELECT substring(mois, 1, 4) AS annee, ff.montant*lff.quantite AS montant "
+                . "FROM lignefraisforfait lff "
+                . "INNER JOIN fraisforfait ff "
+                . "ON lff.idFraisForfait=ff.id "
+                . "WHERE lff.idVisiteur = :unIdVisiteur "
+                . "GROUP BY substring(mois, 1, 4)");
+        $requete_prepare->bindParam(':unIdVisiteur', $idVisiteur, PDO::PARAM_STR);
+        $requete_prepare->execute();
+        $lesFraisForfaits = array();
+        while ($res = $requete_prepare->fetch()) {
+            $unFrais = array($res["annee"], intval($res["montant"]));
+            array_push($lesFraisForfaits, $unFrais);
+        }     
+        return $lesFraisForfaits;
+    }
 
     /**
      * Retourne le nombre de justificatif d'un visiteur pour un mois donné
@@ -324,6 +377,42 @@ class PdoGsb {
         }
         return $lesMois;
     }
+    
+    /**
+     * Retourne tous les visiteurs 
+     * @return un tableau associatif contenant id et nom complet de chaques visiteurs
+     */
+    public function getLesVisiteurs() {
+        $requete_prepare = PdoGSB::$monPdo->prepare("SELECT id, CONCAT(prenom,' ',nom) AS nomComplet "
+                . "FROM visiteur "
+                . "ORDER BY id asc");
+        $requete_prepare->execute();
+        $lesVisiteurs = array();
+        while ($laLigne = $requete_prepare->fetch()) {		
+            $Visiteur = array( $laLigne['id'],$laLigne['nomComplet']);
+            array_push($lesVisiteurs, $Visiteur);
+        }
+        return $lesVisiteurs;
+    }
+    
+    /**
+     * Retourne tous les visiteurs qui ont des fiches de frais
+     * @return un tableau associatif contenant id et nom complet de chaques visiteurs
+     */
+    public function getLesVisiteursFrais() {
+        $requete_prepare = PdoGSB::$monPdo->prepare("SELECT id, CONCAT(prenom,' ',nom) AS nomComplet "
+                . "FROM visiteur "
+                . "WHERE id IN ( "
+                . "SELECT idVisiteur FROM ficheFrais "
+                . ") ");
+        $requete_prepare->execute();
+        $lesVisiteurs = array();
+        while ($laLigne = $requete_prepare->fetch()) {		
+            $Visiteur = $laLigne['id'];
+            array_push($lesVisiteurs, $Visiteur);
+        }
+        return $lesVisiteurs;
+    }
 
     /**
      * Retourne les informations d'une fiche de frais d'un visiteur pour un mois donné
@@ -364,5 +453,28 @@ class PdoGsb {
         $requete_prepare->execute();
     }
 
+    
+    /**
+     * Retourne les mois et année associé au fiche de frais du visiteur
+     * 
+     * @param $idVisiteur 
+     */
+    public function getDateFicheFrais($idVisiteur) {
+        $requete_prepare = PdoGSB::$monPdo->prepare("SELECT mois "
+                . "FROM fichefrais "
+                . "WHERE idVisiteur = :unIdVisiteur");
+        $lesDatesFrais=array();
+        $requete_prepare->bindParam(':unIdVisiteur', $idVisiteur, PDO::PARAM_STR);
+        $requete_prepare->execute();     
+        while ($res = $requete_prepare->fetch()) {
+            $dateFrais = $res['mois'];
+            array_push($lesDatesFrais, $dateFrais);
+        }
+        return $lesDatesFrais;
+    }
+    
+    
+    
 }
+
 ?>
