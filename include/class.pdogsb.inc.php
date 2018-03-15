@@ -20,7 +20,7 @@ class PdoGsb {
     private static $serveur = 'mysql:host=localhost';
     private static $bdd = 'dbname=gsb_frais';
     private static $user = 'root';
-    private static $mdp = '';
+    private static $mdp = 'root';
     private static $monPdo;
     private static $monPdoGsb = null;
     // Génération :  bin2hex(mcrypt_create_iv(32, MCRYPT_DEV_URANDOM));

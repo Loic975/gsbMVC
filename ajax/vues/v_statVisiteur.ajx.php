@@ -24,7 +24,7 @@
             ?>
         </td>
         <?php
-        if($lesFraisHorsForfait[$i][1] != 0)
+        if($lesFraisHorsForfait[$i][1] != null and array_key_exists($i,$lesFraisHorsForfait))
         {
         ?>
         <td style="text-align:center" class="fraisHF">

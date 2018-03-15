@@ -1,10 +1,12 @@
 <?php
+
 /**
  * Fonctions pour l'application GSB
  * @package default
  * @author Cheri Bibi
  * @version    1.0
  */
+
 /**
  * Teste si un quelconque visiteur est connecté
  * @return vrai ou faux 
@@ -12,6 +14,7 @@
 function estConnecte() {
     return isset($_SESSION['idVisiteur']);
 }
+
 /**
  * Enregistre dans une variable session les infos d'un visiteur
  * 
@@ -24,12 +27,14 @@ function connecter($id, $nom, $prenom) {
     $_SESSION['nom'] = $nom;
     $_SESSION['prenom'] = $prenom;
 }
+
 /**
  * Détruit la session active
  */
 function deconnecter() {
     session_destroy();
 }
+
 /**
  * Transforme une date au format français jj/mm/aaaa vers le format anglais aaaa-mm-jj
  * 
@@ -40,6 +45,7 @@ function dateFrancaisVersAnglais($maDate) {
     @list($jour, $mois, $annee) = explode('/', $maDate);
     return date('Y-m-d', mktime(0, 0, 0, $mois, $jour, $annee));
 }
+
 /**
  * Transforme une date au format format anglais aaaa-mm-jj vers le format français jj/mm/aaaa 
  * 
@@ -51,6 +57,7 @@ function dateAnglaisVersFrancais($maDate) {
     $date = "$jour" . "/" . $mois . "/" . $annee;
     return $date;
 }
+
 /**
  * retourne le mois au format aaaamm selon le jour dans le mois
  * 
@@ -64,7 +71,9 @@ function getMois($date) {
     }
     return $annee . $mois;
 }
+
 /* gestion des erreurs */
+
 /**
  * Indique si une valeur est un entier positif ou nul
  * 
@@ -74,6 +83,7 @@ function getMois($date) {
 function estEntierPositif($valeur) {
     return preg_match("/[^0-9]/", $valeur) == 0;
 }
+
 /**
  * Indique si un tableau de valeurs est constitué d'entiers positifs ou nuls
  * 
@@ -89,6 +99,7 @@ function estTableauEntiers($tabEntiers) {
     }
     return $ok;
 }
+
 /**
  * Vérifie si une date est inférieure d'un an à la date actuelle
  * 
@@ -103,6 +114,7 @@ function estDateDepassee($dateTestee) {
     @list($jourTeste, $moisTeste, $anneeTeste) = explode('/', $dateTestee);
     return ($anneeTeste . $moisTeste . $jourTeste < $AnPasse);
 }
+
 /**
  * Vérifie la validité du format d'une date française jj/mm/aaaa 
  * 
@@ -125,6 +137,7 @@ function estDateValide($date) {
     }
     return $dateOK;
 }
+
 /**
  * Vérifie que le tableau de frais ne contient que des valeurs numériques 
  * 
@@ -134,6 +147,7 @@ function estDateValide($date) {
 function lesQteFraisValides($lesFrais) {
     return estTableauEntiers($lesFrais);
 }
+
 /**
  * Vérifie la validité des trois arguments : la date, le libellé du frais et le montant 
  * 
@@ -165,6 +179,7 @@ function valideInfosFrais($dateFrais, $libelle, $montant) {
         ajouterErreur("Le champ montant doit être numérique");
     }
 }
+
 /**
  * Ajoute le libellé d'une erreur au tableau des erreurs 
  * 
@@ -176,6 +191,7 @@ function ajouterErreur($msg) {
     }
     $_REQUEST['erreurs'][] = $msg;
 }
+
 /**
  * Retoune le nombre de lignes du tableau des erreurs 
  * 
@@ -190,32 +206,87 @@ function nbErreurs() {
 }
 
 /**
-* Retourne les années associé au mois des fiche de frais
-* 
-* @param $lesDatesFrais 
-*/
+ * Retourne les années associé au mois des fiche de frais
+ * 
+ * @param $lesDatesFrais 
+ */
 function getAnneeFicheFrais($lesDatesFrais) {
     $lesAnnees = array();
     array_push($lesAnnees, substr($lesDatesFrais[0], 0, 4));
     $trouve = false;
-    foreach($lesDatesFrais as $dateFrais)
-    {
-        foreach ($lesAnnees as $annee)
-        {
-            if(substr($dateFrais, 0, 4) == $annee)
-            {
+    foreach ($lesDatesFrais as $dateFrais) {
+        foreach ($lesAnnees as $annee) {
+            if (substr($dateFrais, 0, 4) == $annee) {
                 $trouve = true;
             }
         }
-        if(!$trouve)
-        {
+        if (!$trouve) {
             array_push($lesAnnees, substr($dateFrais, 0, 4));
-        }
-        else
-        {
+        } else {
             $trouve = false;
         }
     }
     return $lesAnnees;
 }
+
+/**
+ * initialise un client URL
+ * @author
+ * @return le client URL
+ */
+function initCurl($complementURL) {
+// construire l'URL
+    $url = API_URL . $complementURL;
+// initialiser la session http
+    $unCurl = curl_init($url);
+// Préciser que la réponse est souhaitée
+    curl_setopt($unCurl, CURLOPT_RETURNTRANSFER, true);
+// retourner le client HTTP
+    return $unCurl;
+}
+
+/**
+ * consommer le service d'authentification
+ * @author
+ * @return le code HTTP et le jeton (ou un message d'erreur)
+ */
+function authAPI($login, $mdp) {
+// initialiser le client URL
+    $unCurl = initCurl(LOGIN);
+// Préciser le Content-Type
+    curl_setopt($unCurl, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded'));
+// Préciser le type de requête HTTP : POST
+    curl_setopt($unCurl, CURLOPT_POST, true);
+// créer le tableau des données à envoyer par POST
+    $champsPost = array(
+        '_username' => $login,
+        '_password' => $mdp
+    );
+// Créer la chaine url encodée selon la RFC1738 à partir du tableau de paramètres séparés par le caractère &
+    $trame = http_build_query($champsPost, '', '&');
+// Ajouter les paramètres
+    curl_setopt($unCurl, CURLOPT_POSTFIELDS, $trame);
+// Envoyer la requête
+    $reponse = curl_exec($unCurl);
+// convertir la chaîne encodée JSON en une variable PHP
+    $retour = json_decode($reponse, false);
+// récupérer le status
+    $resultStatus = curl_getinfo($unCurl);
+// vérifier si le jeton a été obtenu
+    if ($resultStatus['http_code'] == 200) {
+        // dans ce cas le retour est un objet qui expose la propriété token
+        $laReponse = (object) [
+                    'code' => $resultStatus['http_code'],
+                    'token' => $retour->token
+                ];
+    } else {
+// dans ce cas le retour est un objet qui expose les propriétés code et message
+        $laReponse = $retour;
+    }
+// fermer la session
+    curl_close($unCurl);
+// retourner la réponse
+    return $laReponse;
+}
+
 ?>
