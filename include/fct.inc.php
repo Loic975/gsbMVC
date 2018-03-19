@@ -1,11 +1,113 @@
 <?php
-
 /**
  * Fonctions pour l'application GSB
  * @package default
  * @author Cheri Bibi
  * @version    1.0
  */
+
+
+/**
+ * initialise un client URL 
+ * @author Marianne
+ * @return le client URL 
+ */
+function initCurl($complementURL) {
+    // construire l'URL
+    $url = API_URL.$complementURL;
+    // initialiser la session http
+    $unCurl = curl_init($url);
+    // Préciser que la réponse est souhaitée
+    curl_setopt($unCurl, CURLOPT_RETURNTRANSFER, true);
+    // retourner le client HTTP
+    return $unCurl;
+}
+
+
+/**
+ * consommer le service d'authentification 
+ * @author md
+ * @return le code HTTP et le jeton (ou un message d'erreur)
+ */
+function authAPI($login, $mdp) {
+    // initialiser le client URL
+    $unCurl = initCurl(LOGIN);
+    // Préciser le Content-Type
+    curl_setopt($unCurl,CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded'));
+    
+    // Préciser le type de requête HTTP : POST 
+    curl_setopt($unCurl, CURLOPT_POST, true);
+    
+    // créer le tableau des données à envoyer par POST
+    $champsPost = array(
+        '_username'  => $login,
+        '_password'  => $mdp
+    );     
+    // Créer la chaine url encodée selon la RFC1738 à partir du tableau de paramètres séparés par le caractère &
+    $trame = http_build_query($champsPost, '', '&');
+    // Ajouter les paramètres
+    curl_setopt($unCurl, CURLOPT_POSTFIELDS, $trame);
+    
+    // Envoyer la requête 
+    $reponse = curl_exec($unCurl);
+    // convertir la chaîne encodée JSON en une variable PHP    
+    $retour = json_decode($reponse, false);
+    // récupérer le status
+    $resultStatus = curl_getinfo($unCurl);
+    // vérifier si le jeton a été obtenu
+    if ($resultStatus['http_code'] == 200) {
+        // dans ce cas le retour est un objet qui expose la propriété token       
+        $laReponse = (object) [
+            'code'  => $resultStatus['http_code'],
+            'token'  => $retour->token ];
+    } else {
+        // dans ce cas le retour est un objet qui expose les propriétés code et message
+        $laReponse = $retour;  
+    }
+        
+    // fermer la session
+    curl_close($unCurl);
+    
+    // retourner la réponse 
+    return $laReponse;     
+}
+
+/**
+ * méthode GET  - API Rest Frais 
+ * @author md
+ * @return la réponse 
+ */
+function getAPI($url) {
+    // initialiser le client URL
+    $unCurl = initCurl($url);
+    // Définir l'entête avec le jeton d'authentification
+    $header = array();
+    $header[] = 'Authorization: Bearer '.$_SESSION['token'];
+    curl_setopt($unCurl, CURLOPT_HTTPHEADER, $header);
+    
+    // Envoyer la requête
+    $reponse = curl_exec($unCurl);
+
+    // récupérer le status, ici juste le code HTTP
+    $httpCode = curl_getinfo($unCurl, CURLINFO_HTTP_CODE);
+    // vérifier si il y a une réponse
+    if ($httpCode == 404) {
+        // false indiquera qu'il n'y a pas de ligne retournée
+        $laReponse = false;
+    }
+    else
+    {
+        // convertir la chaîne encodée JSON en une variable PHP    
+        $laReponse = json_decode($reponse, false);
+    }
+    
+    // fermer la session
+    curl_close($unCurl);
+
+    // retourner la réponse 
+    return $laReponse;
+}
+
 
 /**
  * Teste si un quelconque visiteur est connecté
@@ -14,7 +116,6 @@
 function estConnecte() {
     return isset($_SESSION['idVisiteur']);
 }
-
 /**
  * Enregistre dans une variable session les infos d'un visiteur
  * 
@@ -22,19 +123,18 @@ function estConnecte() {
  * @param $nom
  * @param $prenom
  */
-function connecter($id, $nom, $prenom) {
+function connecter($id, $nom, $prenom, $token) {
     $_SESSION['idVisiteur'] = $id;
     $_SESSION['nom'] = $nom;
     $_SESSION['prenom'] = $prenom;
+    $_SESSION['token'] = $token;
 }
-
 /**
  * Détruit la session active
  */
 function deconnecter() {
     session_destroy();
 }
-
 /**
  * Transforme une date au format français jj/mm/aaaa vers le format anglais aaaa-mm-jj
  * 
@@ -45,7 +145,6 @@ function dateFrancaisVersAnglais($maDate) {
     @list($jour, $mois, $annee) = explode('/', $maDate);
     return date('Y-m-d', mktime(0, 0, 0, $mois, $jour, $annee));
 }
-
 /**
  * Transforme une date au format format anglais aaaa-mm-jj vers le format français jj/mm/aaaa 
  * 
@@ -57,7 +156,6 @@ function dateAnglaisVersFrancais($maDate) {
     $date = "$jour" . "/" . $mois . "/" . $annee;
     return $date;
 }
-
 /**
  * retourne le mois au format aaaamm selon le jour dans le mois
  * 
@@ -71,9 +169,7 @@ function getMois($date) {
     }
     return $annee . $mois;
 }
-
 /* gestion des erreurs */
-
 /**
  * Indique si une valeur est un entier positif ou nul
  * 
@@ -83,7 +179,6 @@ function getMois($date) {
 function estEntierPositif($valeur) {
     return preg_match("/[^0-9]/", $valeur) == 0;
 }
-
 /**
  * Indique si un tableau de valeurs est constitué d'entiers positifs ou nuls
  * 
@@ -99,7 +194,6 @@ function estTableauEntiers($tabEntiers) {
     }
     return $ok;
 }
-
 /**
  * Vérifie si une date est inférieure d'un an à la date actuelle
  * 
@@ -114,7 +208,18 @@ function estDateDepassee($dateTestee) {
     @list($jourTeste, $moisTeste, $anneeTeste) = explode('/', $dateTestee);
     return ($anneeTeste . $moisTeste . $jourTeste < $AnPasse);
 }
-
+/**
+ * Vérifie si une date est postérieure à la date du jour
+ * 
+ * @param $dateTestee 
+ * @return vrai ou faux
+ */
+function estDatePosterieure($dateTestee) {
+    $dateActuelle = new DateTime("now");
+    @list($jourTestee, $moisTestee, $anneeTestee) = explode('/', $dateTestee);
+    $dateFrais = new DateTime($anneeTestee.'-'.$moisTestee.'-'.$jourTestee);
+    return ($dateFrais > $dateActuelle);
+}
 /**
  * Vérifie la validité du format d'une date française jj/mm/aaaa 
  * 
@@ -132,12 +237,11 @@ function estDateValide($date) {
         } else {
             if (!checkdate($tabDate[1], $tabDate[0], $tabDate[2])) {
                 $dateOK = false;
-            }
+            } 
         }
     }
     return $dateOK;
 }
-
 /**
  * Vérifie que le tableau de frais ne contient que des valeurs numériques 
  * 
@@ -147,7 +251,6 @@ function estDateValide($date) {
 function lesQteFraisValides($lesFrais) {
     return estTableauEntiers($lesFrais);
 }
-
 /**
  * Vérifie la validité des trois arguments : la date, le libellé du frais et le montant 
  * 
@@ -166,6 +269,10 @@ function valideInfosFrais($dateFrais, $libelle, $montant) {
         } else {
             if (estDateDepassee($dateFrais)) {
                 ajouterErreur("date d'enregistrement du frais dépassé, plus de 1 an");
+            } else {
+            if (estDatePosterieure($dateFrais)) {
+                ajouterErreur("date d'enregistrement du frais postérieure à la date du jour");
+            }
             }
         }
     }
@@ -179,7 +286,6 @@ function valideInfosFrais($dateFrais, $libelle, $montant) {
         ajouterErreur("Le champ montant doit être numérique");
     }
 }
-
 /**
  * Ajoute le libellé d'une erreur au tableau des erreurs 
  * 
@@ -191,7 +297,6 @@ function ajouterErreur($msg) {
     }
     $_REQUEST['erreurs'][] = $msg;
 }
-
 /**
  * Retoune le nombre de lignes du tableau des erreurs 
  * 
@@ -204,89 +309,4 @@ function nbErreurs() {
         return count($_REQUEST['erreurs']);
     }
 }
-
-/**
- * Retourne les années associé au mois des fiche de frais
- * 
- * @param $lesDatesFrais 
- */
-function getAnneeFicheFrais($lesDatesFrais) {
-    $lesAnnees = array();
-    array_push($lesAnnees, substr($lesDatesFrais[0], 0, 4));
-    $trouve = false;
-    foreach ($lesDatesFrais as $dateFrais) {
-        foreach ($lesAnnees as $annee) {
-            if (substr($dateFrais, 0, 4) == $annee) {
-                $trouve = true;
-            }
-        }
-        if (!$trouve) {
-            array_push($lesAnnees, substr($dateFrais, 0, 4));
-        } else {
-            $trouve = false;
-        }
-    }
-    return $lesAnnees;
-}
-
-/**
- * initialise un client URL
- * @author
- * @return le client URL
- */
-function initCurl($complementURL) {
-// construire l'URL
-    $url = API_URL . $complementURL;
-// initialiser la session http
-    $unCurl = curl_init($url);
-// Préciser que la réponse est souhaitée
-    curl_setopt($unCurl, CURLOPT_RETURNTRANSFER, true);
-// retourner le client HTTP
-    return $unCurl;
-}
-
-/**
- * consommer le service d'authentification
- * @author
- * @return le code HTTP et le jeton (ou un message d'erreur)
- */
-function authAPI($login, $mdp) {
-// initialiser le client URL
-    $unCurl = initCurl(LOGIN);
-// Préciser le Content-Type
-    curl_setopt($unCurl, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded'));
-// Préciser le type de requête HTTP : POST
-    curl_setopt($unCurl, CURLOPT_POST, true);
-// créer le tableau des données à envoyer par POST
-    $champsPost = array(
-        '_username' => $login,
-        '_password' => $mdp
-    );
-// Créer la chaine url encodée selon la RFC1738 à partir du tableau de paramètres séparés par le caractère &
-    $trame = http_build_query($champsPost, '', '&');
-// Ajouter les paramètres
-    curl_setopt($unCurl, CURLOPT_POSTFIELDS, $trame);
-// Envoyer la requête
-    $reponse = curl_exec($unCurl);
-// convertir la chaîne encodée JSON en une variable PHP
-    $retour = json_decode($reponse, false);
-// récupérer le status
-    $resultStatus = curl_getinfo($unCurl);
-// vérifier si le jeton a été obtenu
-    if ($resultStatus['http_code'] == 200) {
-        // dans ce cas le retour est un objet qui expose la propriété token
-        $laReponse = (object) [
-                    'code' => $resultStatus['http_code'],
-                    'token' => $retour->token
-                ];
-    } else {
-// dans ce cas le retour est un objet qui expose les propriétés code et message
-        $laReponse = $retour;
-    }
-// fermer la session
-    curl_close($unCurl);
-// retourner la réponse
-    return $laReponse;
-}
-
 ?>

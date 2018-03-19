@@ -6,13 +6,13 @@
         <strong><u>Montant validé :</u></strong> <?php echo $montantValide ?>
     </div>
 </div>
-<div class="panel panel-info"">
+<div class="panel panel-info">
     <div class="panel-heading">Eléments forfaitisés</div>
     <table class="table table-bordered table-responsive">
         <tr>
             <?php
             foreach ($lesFraisForfait as $unFraisForfait) {
-                $libelle = $unFraisForfait['libelle'];
+                $libelle = $unFraisForfait->libelle;
                 ?>	
                 <th> <?php echo htmlspecialchars($libelle) ?></th>
                 <?php
@@ -22,7 +22,7 @@
         <tr>
             <?php
             foreach ($lesFraisForfait as $unFraisForfait) {
-                $quantite = $unFraisForfait['quantite'];
+                $quantite = $unFraisForfait->quantite;
                 ?>
                 <td class="qteForfait"><?php echo $quantite ?> </td>
                 <?php
@@ -41,9 +41,9 @@
         </tr>
         <?php
         foreach ($lesFraisHorsForfait as $unFraisHorsForfait) {
-            $date = $unFraisHorsForfait['date'];
-            $libelle = htmlspecialchars($unFraisHorsForfait['libelle']);
-            $montant = $unFraisHorsForfait['montant'];
+            $date = $unFraisHorsForfait->date;
+            $libelle = htmlspecialchars($unFraisHorsForfait->libelle);
+            $montant = $unFraisHorsForfait->montant;
             ?>
             <tr>
                 <td><?php echo $date ?></td>
